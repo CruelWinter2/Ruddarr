@@ -103,7 +103,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath build/Ruddarr.xcarchive \
             -skipPackagePluginValidation \
-            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CURRENT_PROJECT_VERSION=$(( ${{ github.run_number }} + 20 )) \
             | tee build.log | grep -E 'error:|warning: .*Downloads/|ARCHIVE (SUCCEEDED|FAILED)' || true
           grep -q 'ARCHIVE SUCCEEDED' build.log
 
