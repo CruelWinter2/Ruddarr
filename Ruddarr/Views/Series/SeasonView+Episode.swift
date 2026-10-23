@@ -71,7 +71,7 @@ struct EpisodeRow: View {
 
     private var accessibilitySummary: String {
         var parts: [String] = []
-        if let finale = episode.finaleType { parts.append(finale.label) }
+        if let finale = episode.finaleType { parts.append(finale.text) }
         if let file = episodeFile {
             parts.append(String(localized: "Downloaded, \(file.quality.quality.normalizedName)"))
         } else if let status {

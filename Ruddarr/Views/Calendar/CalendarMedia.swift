@@ -44,7 +44,7 @@ struct CalendarMovie: View {
             .accessibilityElement(children: .ignore)
             .accessibilityLabel(movie.title)
             .accessibilityValue(
-                [movie.releaseType(for: date), statusText].compactMap { $0 }.joined(separator: ", ")
+                [movie.releaseTypeText(for: date), statusText].compactMap { $0 }.joined(separator: ", ")
             )
             .accessibilityAddTraits(.isButton)
             .accessibilityAction { open(.movie(movie)) }
@@ -144,11 +144,11 @@ struct CalendarEpisode: View {
         if episode.isGroupedInCalendar, let hidden = episode.calendarGroupCount {
             parts.append(String(localized: "+\(hidden - 1) more..."))
         } else if episode.isSpecial {
-            parts.append(episode.specialLabel)
+            parts.append(episode.specialText)
         } else if let finale = episode.finaleType {
-            parts.append(finale.label)
+            parts.append(finale.text)
         } else if episode.isPremiere {
-            parts.append(episode.premiereLabel)
+            parts.append(episode.premiereText)
         }
         if let status {
             parts.append(status.label)

@@ -82,3 +82,32 @@ extension SpokenRelease {
 
 extension MovieRelease: SpokenRelease {}
 extension SeriesRelease: SpokenRelease {}
+
+// Plain-text versions of labels the app only has as SwiftUI display text
+extension Episode {
+    var premiereText: String {
+        seasonNumber == 1 ? String(localized: "Series Premiere") : String(localized: "Season Premiere")
+    }
+
+    var specialText: String { String(localized: "Special") }
+}
+
+extension EpisodeFinale {
+    var text: String {
+        switch self {
+        case .series: String(localized: "Series Finale")
+        case .season: String(localized: "Season Finale")
+        case .midseason: String(localized: "Midseason Finale")
+        }
+    }
+}
+
+extension Movie {
+    func releaseTypeText(for date: Date) -> String? {
+        let calendar = Calendar.current
+        if let inCinemas, calendar.isDate(date, inSameDayAs: inCinemas) { return String(localized: "In Cinemas") }
+        if let digital = digitalRelease, calendar.isDate(date, inSameDayAs: digital) { return String(localized: "Digital Release") }
+        if let physical = physicalRelease, calendar.isDate(date, inSameDayAs: physical) { return String(localized: "Physical Release") }
+        return nil
+    }
+}
