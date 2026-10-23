@@ -41,19 +41,18 @@ enum SeerrMediaStatus: Int, Sendable {
 enum SeerrFilter: String, CaseIterable, Identifiable, Sendable {
     var id: Self { self }
 
+    case all
     case pending
     case processing
-    case approved
     case available
-    case all
 
     var label: String {
         switch self {
-        case .pending: String(localized: "Waiting for Approval")
-        case .processing: String(localized: "Downloading")
-        case .approved: String(localized: "Approved")
-        case .available: String(localized: "Available")
         case .all: String(localized: "All Requests")
+        case .pending: String(localized: "Waiting for Approval")
+        // Seerr counts partly available requests as still processing
+        case .processing: String(localized: "Downloading or Partly Available")
+        case .available: String(localized: "Available")
         }
     }
 }
@@ -112,7 +111,7 @@ actor SeerrClient {
 
     func requests(_ filter: SeerrFilter) async throws -> [SeerrRequest] {
         let body = try await get("request", query: [
-            URLQueryItem(name: "take", value: "50"),
+            URLQueryItem(name: "take", value: "100"),
             URLQueryItem(name: "filter", value: filter.rawValue),
             URLQueryItem(name: "sort", value: "added"),
         ]) as? [String: Any] ?? [:]

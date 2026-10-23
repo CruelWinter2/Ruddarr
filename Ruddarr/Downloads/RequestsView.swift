@@ -2,7 +2,7 @@ import SwiftUI
 
 struct RequestsView: View {
     @State private var store = DownloadServers.shared
-    @State private var filter: SeerrFilter = .pending
+    @State private var filter: SeerrFilter = .all
     @State private var requests: [SeerrRequest] = []
     @State private var query = ""
     @State private var results: [SeerrResult]?
@@ -188,6 +188,7 @@ struct RequestsView: View {
             try await client.request(result)
             dependencies.toast.notice(text: String(localized: "Requested \(result.title)"), icon: "checkmark.circle.fill")
             await search()
+            await load()
         } catch {
             dependencies.toast.error(text: error.localizedDescription, icon: "exclamationmark.triangle.fill")
         }
