@@ -12,6 +12,7 @@ struct EpisodeHistory: View {
                 MediaHistoryItem(event: event)
                     .padding(.bottom, 4)
                     .onTapGesture { eventSheet = event }
+                    .accessibilityAddTraits(.isButton)
             }
         } header: {
             Text("History").font(.title2.bold()).padding(.bottom, 6)

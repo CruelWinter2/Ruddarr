@@ -30,6 +30,7 @@ enum TabItem: String, Identifiable, Hashable, Sendable {
     case series
     case calendar
     case activity
+    case downloads
     case history
     case settings
 
@@ -46,6 +47,7 @@ enum TabItem: String, Identifiable, Hashable, Sendable {
         case .series: String(localized: "Series", comment: "Plural. Tab/sidebar menu item")
         case .calendar: String(localized: "Calendar", comment: "Tab/sidebar menu item")
         case .activity: String(localized: "Activity", comment: "Tab/sidebar menu item")
+        case .downloads: String(localized: "Downloads", comment: "Tab/sidebar menu item")
         case .history: String(localized: "History", comment: "Tab/sidebar menu item")
         case .settings: String(localized: "Settings", comment: "Tab/sidebar menu item")
         }
@@ -57,6 +59,7 @@ enum TabItem: String, Identifiable, Hashable, Sendable {
         case .series: "series"
         case .calendar: "calendar"
         case .activity: "waveform.path.ecg"
+        case .downloads: "arrow.down.circle"
         case .history: "clock.arrow.trianglehead.counterclockwise.rotate.90"
         case .settings: "gear"
         }

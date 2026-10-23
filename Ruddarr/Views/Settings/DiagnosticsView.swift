@@ -134,6 +134,7 @@ struct DiagnosticsView: View {
                     .animation(.snappy, value: masked)
             }
             .tint(.primary)
+            .accessibilityLabel(masked ? Text("Show Addresses") : Text("Hide Addresses"))
         }
     }
 

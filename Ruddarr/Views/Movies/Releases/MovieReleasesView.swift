@@ -181,11 +181,13 @@ extension MovieReleasesView {
         } label: {
             if sort.hasFilter {
                 Image("filters.badge")
+                    .accessibilityLabel(Text("Filter, filters on"))
                     .offset(y: 3)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.tint, .primary)
             } else{
                 Image(systemName: "line.3.horizontal.decrease")
+                    .accessibilityLabel(Text("Filter"))
             }
         }
         .menuIndicator(.hidden)
@@ -210,6 +212,7 @@ extension MovieReleasesView {
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down")
+                .accessibilityLabel(Text("Sort"))
                 .imageScale(.medium)
         }
         .tint(.primary)

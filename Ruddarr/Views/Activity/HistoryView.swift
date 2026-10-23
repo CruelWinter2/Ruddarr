@@ -117,11 +117,13 @@ struct HistoryView: View {
             } label: {
                 if displayedInstance != .all || displayedEventType != .all {
                     Image("filters.badge")
+                        .accessibilityLabel(Text("Filter, filters on"))
                         .offset(y: 3)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(settings.theme.tint, .primary)
                 } else {
                     Image(systemName: "line.3.horizontal.decrease")
+                        .accessibilityLabel(Text("Filter"))
                 }
             }
             .menuIndicator(.hidden)

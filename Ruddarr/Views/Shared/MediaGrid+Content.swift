@@ -56,6 +56,7 @@ struct DiscoveryGridHeader: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityLabel(hideLibraryItems ? Text("Show Items in Library") : Text("Hide Items in Library"))
         }
         .frame(maxWidth: .infinity)
     }
@@ -94,6 +95,12 @@ struct DiscoveryGridPoster: View {
                 .opacity(inLibrary ? 0.4 : 1)
         }
         .buttonStyle(.plain)
+        .accessibilityTile(
+            item.title,
+            [String(item.release_date.prefix(4)), inLibrary ? String(localized: "In library") : nil]
+                .compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: ", ")
+        )
+        .accessibilityAddTraits(.isButton)
         .allowsHitTesting(!isLoading)
         .overlay {
             if isLoading {

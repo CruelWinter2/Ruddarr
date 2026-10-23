@@ -44,6 +44,7 @@ struct QueueListItem: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .contentShape(Rectangle())
+        .accessibilityTile(item.titleLabel, accessibilitySummary)
         .onReceive(timer) { _ in
             if item.trackedDownloadState == .downloading {
                 withAnimation {
@@ -51,6 +52,18 @@ struct QueueListItem: View {
                 }
             }
         }
+    }
+}
+
+extension QueueListItem {
+    private var accessibilitySummary: String {
+        var parts = [item.statusLabel]
+        if item.trackedDownloadState == .downloading {
+            parts.append(item.progressLabel)
+            if let remaining = item.remainingLabel { parts.append(remaining) }
+        }
+        if item.hasIssue { parts.append(String(localized: "Needs attention")) }
+        return parts.joined(separator: ", ")
     }
 }
 

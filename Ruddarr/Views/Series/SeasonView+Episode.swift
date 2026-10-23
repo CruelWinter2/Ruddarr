@@ -60,6 +60,28 @@ struct EpisodeRow: View {
             monitorButton
         }
         .contentShape(Rectangle())
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Episode \(episode.episodeNumber.formatted()), \(episode.titleLabel)"))
+        .accessibilityValue(accessibilitySummary)
+        .accessibilityAction(named: episodeMonitored ? Text("Unmonitor") : Text("Monitor")) {
+            guard series.monitored else { return }
+            Task { await toggleMonitor() }
+        }
+    }
+
+    private var accessibilitySummary: String {
+        var parts: [String] = []
+        if let finale = episode.finaleType { parts.append(finale.label) }
+        if let file = episodeFile {
+            parts.append(String(localized: "Downloaded, \(file.quality.quality.normalizedName)"))
+        } else if let status {
+            parts.append(status.label)
+        } else {
+            parts.append(episodeIsMissing ? String(localized: "Missing") : episode.stateLabel)
+        }
+        parts.append(episode.airingToday ? episode.airDateTimeLabel : episode.airDateLabel)
+        parts.append(episodeMonitored ? String(localized: "Monitored") : String(localized: "Not monitored"))
+        return parts.joined(separator: ", ")
     }
 
     private var episodeMonitored: Bool {

@@ -1,0 +1,81 @@
+name: "Personal simulator check"
+
+on:
+  workflow_dispatch: null
+
+permissions:
+  contents: read
+
+jobs:
+  simulator:
+    name: Launch in the iOS simulator
+    runs-on: macos-26
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Select latest Xcode
+        run: |
+          LATEST_VERSION=$(ls -d /Applications/Xcode_*.app | sed 's|.*Xcode_||;s|\.app||' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+          sudo xcode-select -s "/Applications/Xcode_${LATEST_VERSION}.app"
+          xcodebuild -version
+
+      - name: Pick a simulator
+        id: sim
+        run: |
+          UDID=$(xcrun simctl list devices available -j | python3 -c '
+          import json,sys
+          d=json.load(sys.stdin)["devices"]
+          phones=[x for k,v in d.items() if "iOS" in k for x in v if x["name"].startswith("iPhone")]
+          print(phones[-1]["udid"])')
+          echo "udid=$UDID" >> "$GITHUB_OUTPUT"
+          xcrun simctl list devices | grep "$UDID"
+
+      - name: Build for the simulator
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -scheme Ruddarr \
+            -configuration Release \
+            -destination "id=${{ steps.sim.outputs.udid }}" \
+            -derivedDataPath build \
+            -skipPackagePluginValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            | tee build.log | grep -E 'error:|BUILD (SUCCEEDED|FAILED)' || true
+          grep -q 'BUILD SUCCEEDED' build.log
+
+      - name: Install, launch and screenshot
+        run: |
+          UDID=${{ steps.sim.outputs.udid }}
+          APP=$(find build/Build/Products/Release-iphonesimulator -maxdepth 1 -name '*.app' | head -1)
+          mkdir -p shots
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          xcrun simctl spawn "$UDID" log stream --level error --predicate 'process == "Ruddarr"' > shots/app-errors.log 2>&1 &
+          xcrun simctl launch "$UDID" com.ruddarr | tee shots/launch.txt
+          sleep 20
+          xcrun simctl io "$UDID" screenshot shots/launch.png
+          # Still running after 20 seconds means it didn't crash on start
+          if xcrun simctl spawn "$UDID" launchctl list | grep -q 'UIKitApplication:com.ruddarr'; then
+            echo "Ruddarr is running" | tee shots/result.txt
+          else
+            echo "Ruddarr is NOT running" | tee shots/result.txt
+            find ~/Library/Logs/DiagnosticReports -name 'Ruddarr*' -exec cp {} shots/ \; || true
+            exit 1
+          fi
+          xcrun simctl openurl "$UDID" "ruddarr://downloads" || true
+          sleep 5
+          xcrun simctl io "$UDID" screenshot shots/after-url.png
+
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: simulator-results
+          path: |
+            shots
+            build.log
+          retention-days: 7

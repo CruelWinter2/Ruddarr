@@ -22,6 +22,9 @@ struct Ruddarr: App {
         // Tips.showAllTipsForTesting()
         #endif
 
+        // Personal sideloaded build: no iCloud capability, so CloudKit is mocked
+        dependencies.cloudkit = .mock
+
         Migrations.run()
         startSentry()
         InstancesStore.shared.start()
@@ -58,6 +61,17 @@ struct Ruddarr: App {
     }
 
     func openDeeplink(url: URL) {
+        // A settings file shared to Ruddarr from Files or another app
+        if url.isFileURL {
+            do {
+                let imported = try SettingsImporter.importFile(at: url)
+                dependencies.toast.notice(text: imported.summary, icon: "checkmark.circle.fill")
+            } catch {
+                dependencies.toast.error(text: error.localizedDescription, icon: "exclamationmark.triangle.fill")
+            }
+            return
+        }
+
         do {
             try QuickActions.Deeplink(url: url)()
         } catch {

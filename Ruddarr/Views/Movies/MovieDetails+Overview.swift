@@ -60,6 +60,7 @@ extension MovieDetails {
             .lineLimit(3)
             .kerning(-0.5)
             .textSelection(.enabled)
+            .accessibilityAddTraits(.isHeader)
     }
 
     var detailsSubtitle: some View {

@@ -121,6 +121,11 @@ struct QueueItemSheet: View {
             .monospacedDigit()
             .foregroundStyle(.secondary)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Download progress"))
+        .accessibilityValue(
+            [item.progressLabel, item.remainingLabel].compactMap { $0 }.joined(separator: ", ")
+        )
         .onAppear {
             downloadProgress = item.size - item.sizeleft
         }

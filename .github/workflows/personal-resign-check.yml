@@ -1,0 +1,74 @@
+name: "Personal re-sign check"
+
+on:
+  workflow_dispatch: null
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  resign:
+    name: Re-sign with zsign and verify
+    runs-on: macos-26
+    timeout-minutes: 30
+
+    steps:
+      - name: Get the latest signed IPA
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          RUN=$(gh run list -R "$GITHUB_REPOSITORY" --workflow personal-ipa.yml --status success --limit 1 --json databaseId -q '.[0].databaseId')
+          gh run download "$RUN" -R "$GITHUB_REPOSITORY" -n Ruddarr-ipa -D in
+          ls -l in
+
+      - name: Build zsign
+        run: |
+          set -euo pipefail
+          brew install pkg-config openssl >/dev/null
+          git clone --depth 1 https://github.com/zhlynn/zsign.git zsign-src
+          make -C zsign-src/build/macos clean >/dev/null
+          make -C zsign-src/build/macos >/dev/null
+          ZS=$(find zsign-src/bin zsign-src/build -type f -name zsign -perm -u+x | head -1)
+          cp "$ZS" ./zsign && ./zsign -v || true
+
+      - name: Re-sign two ways and verify
+        env:
+          P12: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          P12_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE: ${{ secrets.IOS_PROVISION_PROFILE }}
+        run: |
+          set -uo pipefail
+          printf '%s' "$P12" | base64 --decode > cert.p12
+          printf '%s' "$PROFILE" | base64 --decode > profile.mobileprovision
+
+          verify () {
+            local label="$1" ipa="$2"
+            echo "################ $label"
+            rm -rf "v-$label" && mkdir "v-$label" && (cd "v-$label" && unzip -q "../$ipa")
+            for B in "v-$label"/Payload/*.app "v-$label"/Payload/*.app/PlugIns/*.appex "v-$label"/Payload/*.app/Frameworks/*.framework; do
+              [ -e "$B" ] || continue
+              echo "== ${B#v-$label/}"
+              codesign --verify --deep --strict --verbose=4 "$B" 2>&1 | sed 's/^/   /'
+              codesign -d --verbose=2 "$B" 2>&1 | grep -E 'Identifier|TeamIdentifier|Authority=Apple Distribution|Signature size|CodeDirectory' | sed 's/^/   /'
+            done
+          }
+
+          ./zsign -k cert.p12 -p "$P12_PASSWORD" -m profile.mobileprovision -o as-is.ipa in/Ruddarr.ipa 2>&1 | tail -5
+          verify as-is as-is.ipa
+
+          rm -rf strip && mkdir strip && (cd strip && unzip -q ../in/Ruddarr.ipa && rm -rf Payload/*.app/Frameworks/Sentry.framework && zip -qry ../no-sentry-in.ipa Payload)
+          ./zsign -k cert.p12 -p "$P12_PASSWORD" -m profile.mobileprovision -o no-sentry.ipa no-sentry-in.ipa 2>&1 | tail -5
+          verify no-sentry no-sentry.ipa
+
+          rm -f cert.p12 profile.mobileprovision
+
+      - name: Upload re-signed copies
+        uses: actions/upload-artifact@v4
+        with:
+          name: resigned
+          path: |
+            as-is.ipa
+            no-sentry.ipa
+          retention-days: 7

@@ -50,6 +50,7 @@ struct MovieMetadataView: View {
                     MovieFilesFile(file: file)
                         .padding(.bottom, 4)
                         .onTapGesture { fileSheet = file }
+                        .accessibilityAddTraits(.isButton)
                 }
 
                 ForEach(instance.metadata.extraFiles) { file in
@@ -85,6 +86,7 @@ struct MovieMetadataView: View {
                     MediaHistoryItem(event: event)
                         .padding(.bottom, 4)
                         .onTapGesture { eventSheet = event }
+                        .accessibilityAddTraits(.isButton)
                 }
             }
         } header: {

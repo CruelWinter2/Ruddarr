@@ -73,11 +73,13 @@ extension CalendarView {
             } label: {
                 if displayedMediaType != .all || onlyPremieres || onlyMonitored || hideSpecials {
                     Image("filters.badge")
+                        .accessibilityLabel(Text("Filter, filters on"))
                         .offset(y: 3)
                         .symbolRenderingMode(.palette)
                         .foregroundStyle(.tint, .primary)
                 } else {
                     Image(systemName: "line.3.horizontal.decrease")
+                        .accessibilityLabel(Text("Filter"))
                 }
             }
             .menuIndicator(.hidden)

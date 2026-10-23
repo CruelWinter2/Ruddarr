@@ -26,6 +26,11 @@ struct ContentView: View {
             }
             .badge(Queue.shared.itemsWithIssues)
 
+            Tab(TabItem.downloads.label, systemImage: TabItem.downloads.icon, value: TabItem.downloads) {
+                DownloadsView()
+                    .displayToasts()
+            }
+
             if deviceType == .pad {
                 Tab(history.label, systemImage: history.icon, value: history) {
                     HistoryView()

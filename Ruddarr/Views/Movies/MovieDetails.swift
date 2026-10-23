@@ -87,6 +87,8 @@ struct MovieDetails: View {
                 }.onTapGesture {
                     fileSheet = movie.movieFile
                 }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text("Shows the file details"))
             }
         }
         .sheet(item: $fileSheet) { file in

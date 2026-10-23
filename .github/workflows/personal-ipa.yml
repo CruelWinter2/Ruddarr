@@ -1,0 +1,157 @@
+name: "Personal IPA"
+
+on:
+  push:
+    branches:
+      - personal
+  workflow_dispatch: null
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+# The team ID and bundle ID come from repository secrets so they never appear in the code or logs
+env:
+  DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
+  APP_BUNDLE_ID: ${{ secrets.APP_BUNDLE_ID }}
+
+jobs:
+  ipa:
+    name: Build signed Ad Hoc IPA
+    runs-on: macos-26
+    timeout-minutes: 40
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Select latest Xcode
+        run: |
+          LATEST_VERSION=$(ls -d /Applications/Xcode_*.app | sed 's|.*Xcode_||;s|\.app||' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
+          sudo xcode-select -s "/Applications/Xcode_${LATEST_VERSION}.app"
+          xcodebuild -version
+
+      - name: Import signing certificate
+        uses: Apple-Actions/import-codesign-certs@v7
+        with:
+          p12-file-base64: ${{ secrets.IOS_CERTIFICATE_P12 }}
+          p12-password: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+
+      - name: Install provisioning profile
+        id: profile
+        env:
+          PROFILE: ${{ secrets.IOS_PROVISION_PROFILE }}
+        run: |
+          set -euo pipefail
+          DEST="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$DEST" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"
+          RAW="$(mktemp)"; PLIST="$(mktemp)"
+          printf '%s' "$PROFILE" | base64 --decode > "$RAW"
+          security cms -D -i "$RAW" > "$PLIST"
+          UUID="$(/usr/libexec/PlistBuddy -c 'Print :UUID' "$PLIST")"
+          cp "$RAW" "$DEST/$UUID.mobileprovision"
+          cp "$RAW" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles/$UUID.mobileprovision"
+          echo "uuid=$UUID" >> "$GITHUB_OUTPUT"
+
+      - name: Assign the bundle IDs and profile to the app and extension
+        run: |
+          set -euo pipefail
+          # Only these two targets get signing settings; command-line values would also hit
+          # the Swift package and plugin targets, which refuse them
+          UUID="${{ steps.profile.outputs.uuid }}"
+          python3 - "$UUID" <<'PY'
+          import os, re, sys
+          path = "Ruddarr.xcodeproj/project.pbxproj"
+          text = open(path).read()
+          keys = ("CODE_SIGN_IDENTITY", "\"CODE_SIGN_IDENTITY[sdk=iphoneos*]\"", "CODE_SIGN_STYLE",
+                  "PROVISIONING_PROFILE_SPECIFIER", "DEVELOPMENT_TEAM")
+          signing = (
+              f'PROVISIONING_PROFILE_SPECIFIER = "{sys.argv[1]}";',
+              "CODE_SIGN_STYLE = Manual;",
+              'CODE_SIGN_IDENTITY = "Apple Distribution";',
+              f"DEVELOPMENT_TEAM = {os.environ['DEVELOPMENT_TEAM']};",
+          )
+          bundle = os.environ["APP_BUNDLE_ID"]
+          count = 0
+          def patch(block):
+              global count
+              body = block.group(0)
+              found = re.search(r"PRODUCT_BUNDLE_IDENTIFIER = com\.ruddarr(\.notifications)?;", body)
+              if not found:
+                  return body
+              count += 1
+              body = body.replace(found.group(0), f"PRODUCT_BUNDLE_IDENTIFIER = {bundle}{found.group(1) or ''};")
+              indent = re.search(r"\n(\t+)PRODUCT_BUNDLE_IDENTIFIER", body).group(1)
+              lines = [l for l in body.split("\n") if not l.strip().startswith(tuple(k + " =" for k in keys))]
+              head, rest = lines[0], lines[1:]
+              return "\n".join([head] + [indent + line for line in signing] + rest)
+          text = re.sub(r"buildSettings = \{.*?\n\t+\};", patch, text, flags=re.S)
+          open(path, "w").write(text)
+          print(f"signing set on {count} build configurations")
+          assert count == 4
+          PY
+
+      - name: Archive
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -scheme Ruddarr \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Ruddarr.xcarchive \
+            -skipPackagePluginValidation \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            | tee build.log | grep -E 'error:|warning: .*Downloads/|ARCHIVE (SUCCEEDED|FAILED)' || true
+          grep -q 'ARCHIVE SUCCEEDED' build.log
+
+      - name: Export IPA
+        run: |
+          set -euo pipefail
+          PLIST=build/ExportOptions.plist
+          cat > "$PLIST" <<'XML'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict/></plist>
+          XML
+          pb () { /usr/libexec/PlistBuddy -c "$1" "$PLIST"; }
+          pb "Add :method string release-testing"
+          pb "Add :teamID string ${DEVELOPMENT_TEAM}"
+          pb "Add :signingStyle string manual"
+          pb "Add :stripSwiftSymbols bool true"
+          pb "Add :thinning string <none>"
+          pb "Add :provisioningProfiles dict"
+          pb "Add :provisioningProfiles:${APP_BUNDLE_ID} string ${{ steps.profile.outputs.uuid }}"
+          pb "Add :provisioningProfiles:${APP_BUNDLE_ID}.notifications string ${{ steps.profile.outputs.uuid }}"
+          xcodebuild -exportArchive \
+            -archivePath build/Ruddarr.xcarchive \
+            -exportOptionsPlist "$PLIST" \
+            -exportPath build/export
+          cp build/export/*.ipa Ruddarr.ipa
+
+      - name: Verify signature
+        run: |
+          set -euo pipefail
+          rm -rf check && mkdir check && cd check && unzip -q ../Ruddarr.ipa
+          for B in Payload/*.app Payload/*.app/PlugIns/*.appex Payload/*.app/Frameworks/*.framework; do
+            [ -e "$B" ] || continue
+            echo "== $B"
+            codesign --verify --deep --strict --verbose=2 "$B"
+          done
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ruddarr-ipa
+          path: Ruddarr.ipa
+          retention-days: 14
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: build.log
+          retention-days: 7

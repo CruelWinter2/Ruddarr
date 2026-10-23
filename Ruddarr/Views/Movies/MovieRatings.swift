@@ -17,6 +17,9 @@ struct MovieRatings: View {
         }
         .font(deviceType == .phone ? .subheadline : .callout)
         .foregroundStyle(.secondary)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("Ratings"))
+        .accessibilityValue(badges.map(\.spoken).joined(separator: ", "))
     }
 
     private func row(_ badges: ArraySlice<Badge>) -> some View {
@@ -125,6 +128,16 @@ struct MovieRatings: View {
         case tmdb(Float)
         case metacritic(Float)
         case trakt(Float)
+
+        var spoken: String {
+            switch self {
+            case .rottenTomatoes(let rating): "Rotten Tomatoes \(rating.formatted(.percentageRating))"
+            case .imdb(let rating): "IMDb \(rating.formatted(.number.precision(.fractionLength(1))))"
+            case .tmdb(let rating): "TMDB \((rating * 10).formatted(.percentageRating))"
+            case .metacritic(let rating): "Metacritic \(rating.formatted(.decimal(0)))"
+            case .trakt(let rating): "Trakt \((rating * 10).formatted(.percentageRating))"
+            }
+        }
 
         var id: String {
             switch self {

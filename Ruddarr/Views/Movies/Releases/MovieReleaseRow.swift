@@ -9,10 +9,13 @@ struct MovieReleaseRow: View {
     @ScaledMetric(relativeTo: .callout) private var iconBaselineRaise: CGFloat = 1
 
     var body: some View {
-        switch settings.releases {
-        case .compact: compactRow
-        case .detailed: detailedRow
+        Group {
+            switch settings.releases {
+            case .compact: compactRow
+            case .detailed: detailedRow
+            }
         }
+        .accessibilityTile(release.title, release.accessibilitySummary)
     }
 
     var compactRow: some View {

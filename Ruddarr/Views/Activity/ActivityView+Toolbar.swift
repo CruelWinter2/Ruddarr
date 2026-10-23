@@ -49,6 +49,7 @@ extension ActivityView {
                         HistoryView().environment(settings)
                     } label: {
                         Image(systemName: "clock.arrow.trianglehead.counterclockwise.rotate.90")
+                            .accessibilityLabel(Text("History"))
                             .imageScale(.medium)
                     }.tint(.primary)
                 }
@@ -76,11 +77,13 @@ extension ActivityView {
         } label: {
             if sort.hasFilter {
                 Image("filters.badge")
+                    .accessibilityLabel(Text("Filter, filters on"))
                     .offset(y: 3)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(settings.theme.tint, .primary)
             } else {
                 Image(systemName: "line.3.horizontal.decrease")
+                    .accessibilityLabel(Text("Filter"))
             }
         }
     }
@@ -159,6 +162,7 @@ extension ActivityView {
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down")
+                .accessibilityLabel(Text("Sort"))
                 .imageScale(.medium)
         }
     }

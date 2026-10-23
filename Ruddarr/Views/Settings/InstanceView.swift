@@ -159,6 +159,8 @@ struct InstanceView: View {
                     SettingsView.Path.editInstance(instance.id, advanced: advanced)
                 )
             }
+            .accessibilityAddTraits(.isButton)
+            .accessibilityHint(Text("Edits the instance"))
     }
 
     var instanceHeaders: some View {

@@ -42,6 +42,13 @@ struct CalendarDate: View {
         .transaction { transaction in
             transaction.animation = nil // disable animation
         }
+        // Reads as one heading, e.g. "Today, Thursday, October 23"
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(
+            (isToday ? String(localized: "Today") + ", " : "")
+                + date.formatted(.dateTime.weekday(.wide).month(.wide).day())
+        )
+        .accessibilityAddTraits(.isHeader)
     }
 
     static let dayOfWeek: DateFormatter = {
@@ -70,6 +77,7 @@ struct CalendarWeekRange: View {
         Spacer()
 
         Text(weekRange(date))
+            .accessibilityAddTraits(.isHeader)
             .font(.subheadline)
             .textCase(.uppercase)
             .kerning(1.0)

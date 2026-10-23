@@ -65,6 +65,7 @@ struct SeriesGridCard: View {
             poster.frame(width: 300, height: 450)
         }
         .tracksQueueStatus(series.queueKey, into: $queueStatus)
+        .accessibilityTile(series.title, series.accessibilitySummary)
     }
 
     var poster: some View {

@@ -75,6 +75,24 @@ struct IconsView: View {
                     .offset(x: 3, y: -6)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(icon.label)
+        .accessibilityValue(
+            [settings.icon == icon ? String(localized: "Selected") : nil,
+             icon.data.locked && !entitledToService ? String(localized: "Locked") : nil]
+                .compactMap { $0 }.joined(separator: ", ")
+        )
+        .accessibilityAddTraits(settings.icon == icon ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction {
+            if !icon.locked || entitledToService {
+                settings.icon = icon
+                #if os(iOS)
+                    UIApplication.shared.setAlternateIconName(icon.asset)
+                #endif
+            } else {
+                showSubscription = true
+            }
+        }
     }
 
     func handleSubscriptionStatusChange(

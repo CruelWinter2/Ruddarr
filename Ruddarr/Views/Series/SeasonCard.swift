@@ -44,6 +44,16 @@ struct SeasonCard: View {
                 .disabled(!series.monitored)
             }
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(season.label)
+        .accessibilityValue(
+            [season.progressLabel, status?.label, seasonMonitored ? String(localized: "Monitored") : String(localized: "Not monitored")]
+                .compactMap { $0 }.joined(separator: ", ")
+        )
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction(named: seasonMonitored ? Text("Unmonitor") : Text("Monitor")) {
+            Task { await toggle() }
+        }
     }
 
     private var seasonMonitored: Bool {

@@ -19,6 +19,7 @@ struct MovieGridPoster: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .tracksGridPosterWidth()
+            .accessibilityTile(movie.title, movie.accessibilitySummary)
     }
 
     var poster: some View {

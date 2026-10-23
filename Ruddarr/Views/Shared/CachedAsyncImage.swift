@@ -36,8 +36,10 @@ struct CachedAsyncImage: View {
                     PlaceholderImage(text: placeholder)
                 }
             }.pipeline(Images.shared)
+            .accessibilityHidden(true)
         } else {
             PlaceholderImage(text: placeholder)
+                .accessibilityHidden(true)
         }
     }
 }

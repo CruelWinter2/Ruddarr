@@ -47,6 +47,12 @@ struct MediaHistoryItem: View {
 
             Text(title?.breakable() ?? "--")
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(Text("\(event.eventType.label), \(title ?? "")"))
+        .accessibilityValue(
+            [event.quality.quality.label, event.languageLabel, event.indexerLabel, date]
+                .compactMap { $0 }.joined(separator: ", ")
+        )
     }
 
     var title: String? {

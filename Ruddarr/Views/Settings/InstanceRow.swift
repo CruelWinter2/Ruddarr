@@ -38,6 +38,10 @@ struct InstanceRow: View {
                         .imageScale(.small)
                         .scaleEffect(0.95)
                         .foregroundStyle(.secondary)
+                        .accessibilityLabel(
+                            notifications && webhook == .enabled
+                                ? Text("Notifications on") : Text("Notifications off")
+                        )
                 }
             }
 

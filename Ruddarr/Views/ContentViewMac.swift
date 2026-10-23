@@ -12,6 +12,7 @@ struct ContentView: View {
                 sidebarItem(calendar)
 
                 sidebarItem(activity, badge: Queue.shared.itemsWithIssues)
+                sidebarItem(TabItem.downloads)
                 sidebarItem(history)
 
                 sidebarItem(TabItem.settings)
@@ -33,6 +34,8 @@ struct ContentView: View {
                         .frame(maxWidth: 700)
                 case .activity:
                     ActivityView()
+                case .downloads:
+                    DownloadsView()
                 case .history:
                     HistoryView()
                 case .settings:

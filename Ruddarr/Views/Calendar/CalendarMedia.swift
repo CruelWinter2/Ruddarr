@@ -41,6 +41,21 @@ struct CalendarMovie: View {
             .onTapGesture {
                 open(.movie(movie))
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(movie.title)
+            .accessibilityValue(
+                [movie.releaseType(for: date), statusText].compactMap { $0 }.joined(separator: ", ")
+            )
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { open(.movie(movie)) }
+    }
+
+    var statusText: String? {
+        if let status { return status.label }
+        if movie.isDownloaded { return String(localized: "Downloaded") }
+        if !movie.monitored { return String(localized: "Not monitored") }
+        if movie.isWaiting { return String(localized: "Not released yet") }
+        return String(localized: "Missing")
     }
 
     var shouldFade: Bool {
@@ -115,6 +130,38 @@ struct CalendarEpisode: View {
         .onTapGesture {
             open(.episode(episode))
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(episode.series?.title ?? String(localized: "Unknown"))
+        .accessibilityValue(episodeSummary)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityAction { open(.episode(episode)) }
+    }
+
+    var episodeSummary: String {
+        var parts = [episode.episodeLabel]
+        if let title = episode.title { parts.append(title) }
+        if let airDate = episode.airDateUtc { parts.append(airDate.formatted(date: .omitted, time: .shortened)) }
+        if episode.isGroupedInCalendar, let hidden = episode.calendarGroupCount {
+            parts.append(String(localized: "+\(hidden - 1) more..."))
+        } else if episode.isSpecial {
+            parts.append(episode.specialLabel)
+        } else if let finale = episode.finaleType {
+            parts.append(finale.label)
+        } else if episode.isPremiere {
+            parts.append(episode.premiereLabel)
+        }
+        if let status {
+            parts.append(status.label)
+        } else if episode.isDownloaded {
+            parts.append(String(localized: "Downloaded"))
+        } else if !episode.monitored || episode.series?.monitored == false {
+            parts.append(String(localized: "Not monitored"))
+        } else if !episode.hasAired {
+            parts.append(String(localized: "Not aired yet"))
+        } else {
+            parts.append(String(localized: "Missing"))
+        }
+        return parts.joined(separator: ", ")
     }
 
     var shouldFade: Bool {

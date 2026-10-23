@@ -136,6 +136,7 @@ struct MediaDetailsRow: View {
             Spacer()
         }
         .font(.callout)
+        .accessibilityElement(children: .combine)
     }
 }
 

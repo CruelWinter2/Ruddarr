@@ -3,6 +3,7 @@ import SwiftUI
 struct Bullet: View {
     var body: some View {
         Text(verbatim: "•")
+            .accessibilityHidden(true)
     }
 }
 
@@ -16,6 +17,7 @@ struct ToolbarFilterBadge: View {
             }
             .scaleEffect(0.35)
             .offset(x: 8, y: -7)
+            .accessibilityHidden(true)
     }
 }
 
@@ -42,6 +44,8 @@ struct MonitorBookmark: View {
                     pulsing = true
                 }
             }
+            .accessibilityLabel(monitored ? Text("Monitored") : Text("Not Monitored"))
+            .accessibilityHint(Text("Toggles monitoring"))
     }
 }
 
@@ -72,6 +76,7 @@ struct RowMonitorButton: View {
 struct ToolbarActionButton: View {
     var body: some View {
         Image(systemName: "ellipsis")
+            .accessibilityLabel(Text("More Actions"))
     }
 }
 

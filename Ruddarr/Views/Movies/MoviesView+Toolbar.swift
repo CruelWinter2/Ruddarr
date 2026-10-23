@@ -8,6 +8,7 @@ extension MoviesView {
             ToolbarItem(placement: .primaryAction) {
                 NavigationLink(value: MoviesPath.search()) {
                     Image(systemName: "plus")
+                        .accessibilityLabel(Text("Add Movie"))
                 }
                 .tint(.primary)
                 .keyboardShortcut("n", modifiers: .command)
@@ -53,11 +54,13 @@ extension MoviesView {
         } label: {
             if sort.filter != .all || sort.folder != .all {
                 Image("filters.badge")
+                    .accessibilityLabel(Text("Filter, filters on"))
                     .offset(y: 3)
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.tint, .primary)
             } else {
                 Image(systemName: "line.3.horizontal.decrease")
+                    .accessibilityLabel(Text("Filter"))
             }
         }
     }
@@ -79,6 +82,7 @@ extension MoviesView {
             }
         } label: {
             Image(systemName: "arrow.up.arrow.down")
+                .accessibilityLabel(Text("Sort"))
                 .imageScale(.medium)
         }
     }
@@ -128,6 +132,7 @@ extension MoviesView {
                 .pickerStyle(.inline)
             } label: {
                 Image(systemName: "internaldrive")
+                    .accessibilityLabel(Text("Instance"))
             }
             .tint(.primary)
         }

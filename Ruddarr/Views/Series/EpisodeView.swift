@@ -166,6 +166,8 @@ struct EpisodeView: View {
                 }.onTapGesture {
                     fileSheet = episodeFile
                 }
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint(Text("Shows the file details"))
             }
         }
     }
@@ -280,6 +282,7 @@ struct EpisodeView: View {
                     Text(file.filenameLabel)
                 }
                 .onTapGesture { fileSheet = file }
+                .accessibilityAddTraits(.isButton)
                 .contextMenu { deleteFileButton }
                 .popoverTip(DeleteFileTip())
                 .padding(.bottom)

@@ -65,6 +65,14 @@ struct MovieGridCard: View {
             poster.frame(width: 300, height: 450)
         }
         .tracksQueueStatus(movie.queueKey, into: $queueStatus)
+        .accessibilityTile(movie.title, cardSummary)
+    }
+
+    private var cardSummary: String {
+        var parts = [movie.accessibilitySummary]
+        if let file = movie.movieFile { parts.append(file.quality.quality.label) }
+        if let size = movie.sizeLabel { parts.append(size) }
+        return parts.joined(separator: ", ")
     }
 
     var poster: some View {

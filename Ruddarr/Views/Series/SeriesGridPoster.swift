@@ -30,6 +30,7 @@ struct SeriesGridPoster: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: 14))
             .tracksGridPosterWidth()
+            .accessibilityTile(series.title, series.accessibilitySummary)
     }
 
     var poster: some View {

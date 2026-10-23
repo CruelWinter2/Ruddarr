@@ -21,6 +21,9 @@ struct CustomFormats: View {
                     CustomFormat(tag, small: small)
                 }
             }
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(Text("Custom formats"))
+            .accessibilityValue(formats.joined(separator: ", "))
         }
     }
 }
