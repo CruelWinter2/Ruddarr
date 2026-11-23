@@ -2,42 +2,76 @@
 
 Ruddarr is a beautifully designed, open source, companion app for Radarr and Sonarr instances written in SwiftUI.
 
-- [App Store](https://apps.apple.com/app/ruddarr/id6476240130)
+This fork adds download clients, Prowlarr, Seerr and VoiceOver support. It's built for sideloading and isn't the App Store version.
+
+- [Original Ruddarr on the App Store](https://apps.apple.com/app/ruddarr/id6476240130) (without this fork's additions)
 - [Join the Discord](https://discord.gg/UksvtDQUBA)
 
 ## Features
 
 - Manage movies and TV series
 - Browse upcoming releases in the calendar
-- Receive fine-grained notifications
+- Discover and request movies and series with Seerr: poster rows for trending, popular and upcoming titles, search, and approving or declining requests
+- Control download clients: qBittorrent, Deluge and SABnzbd (pause, resume, remove, add links and set speed limits)
+- Search indexers with Prowlarr
 - View activity queue tasks and history events
 - Switch between multiple instances
+- Import every server at once from a settings file or the clipboard
 - Customize the app color scheme and appearance
-- Synchronize settings/instances between devices (iCloud)
 - Automate actions using Siri Shortcuts
 - Connect to reverse proxies using custom HTTP headers
 - Use Spotlight search to quickly jump to media
+- Works with VoiceOver
 - Fully localized, ready to be translated
+
+The tab bar has **Calendar**, **Movies**, **Discover**, **Series** and **Downloads**. The Downloads tab switches between the download client and the Radarr/Sonarr **Activity** queue, with **History** inside Activity. **Settings** opens from the gear button on Discover.
 
 ## Screenshots
 <p>
-  <a href="https://github.com/user-attachments/assets/9b8e1509-88e4-49f8-a22d-c30b0dc8f2db"><img src="https://github.com/user-attachments/assets/9b8e1509-88e4-49f8-a22d-c30b0dc8f2db" alt="Movies library" width="24%"></a>
-  <a href="https://github.com/user-attachments/assets/ad590837-15bf-4f17-b35d-33b33959eb53"><img src="https://github.com/user-attachments/assets/ad590837-15bf-4f17-b35d-33b33959eb53" alt="Series details" width="24%"></a>
-  <a href="https://github.com/user-attachments/assets/b6c5c15f-e508-48fc-80f0-2429307f3419"><img src="https://github.com/user-attachments/assets/b6c5c15f-e508-48fc-80f0-2429307f3419" alt="Calendar" width="24%"></a>
-  <a href="https://github.com/user-attachments/assets/576de4dc-0e6f-4816-8d65-b62142fe8b80"><img src="https://github.com/user-attachments/assets/576de4dc-0e6f-4816-8d65-b62142fe8b80" alt="Discover movies" width="24%"></a>
+  <a href=".github/screenshots/movies.png"><img src=".github/screenshots/movies.png" alt="Movies library" width="32%"></a>
+  <a href=".github/screenshots/discover.png"><img src=".github/screenshots/discover.png" alt="Discover with Seerr" width="32%"></a>
+  <a href=".github/screenshots/discover-details.png"><img src=".github/screenshots/discover-details.png" alt="Requesting a movie from Discover" width="32%"></a>
 </p>
+<p>
+  <a href=".github/screenshots/series-details.png"><img src=".github/screenshots/series-details.png" alt="Series details" width="32%"></a>
+  <a href=".github/screenshots/calendar.png"><img src=".github/screenshots/calendar.png" alt="Calendar" width="32%"></a>
+  <a href=".github/screenshots/downloads.png"><img src=".github/screenshots/downloads.png" alt="Downloads" width="32%"></a>
+</p>
+
+## Importing Settings
+
+Radarr and Sonarr instances, download clients, Prowlarr and Seerr can be set up in one go from a JSON file. Share the file to Ruddarr from the Files app, or use **Downloads → Import Settings** (from a file or the clipboard). Entries that match an existing instance or client (same type and URL) are updated in place.
+
+```json
+{
+  "instances": [
+    { "type": "sonarr", "label": "Sonarr", "url": "http://10.0.0.5:8989",
+      "alternateURL": "https://sonarr.example.com", "apiKey": "...", "headers": [] }
+  ],
+  "downloadClients": [
+    { "kind": "qbittorrent", "label": "qBittorrent", "url": "http://10.0.0.5:8080",
+      "username": "...", "password": "..." },
+    { "kind": "deluge", "label": "Deluge", "url": "http://10.0.0.5:8112", "password": "..." },
+    { "kind": "sabnzbd", "label": "SABnzbd", "url": "http://10.0.0.5:8080", "apiKey": "..." }
+  ],
+  "prowlarr": { "url": "http://10.0.0.5:9696", "apiKey": "..." },
+  "seerr": { "url": "http://10.0.0.5:5055", "apiKey": "..." }
+}
+```
+
+The file holds API keys and passwords, so don't share it.
 
 ## Localization
 
 Help [translate Ruddarr](https://crowdin.com/project/ruddarr) into any language. Check the `#translators` channel [on Discord](https://discord.gg/UksvtDQUBA). Unfortunately, [some messages](https://github.com/ruddarr/app/issues/433) cannot be translated by Ruddarr.
 
-## Notifications
+## Notifications and iCloud
 
-The code of the notification service is and also [open source](https://github.com/ruddarr/apns-worker).
+Sideloaded builds of this fork have no push notification, iCloud or App Group capabilities, so push notifications and syncing instances between devices are off. CloudKit is mocked in `Ruddarr::init()`. The notification service is [open source](https://github.com/ruddarr/apns-worker) if you want to set up your own.
 
 ## URL Schemes
 
-Ruddarr supports the `ruddarr://` URL Scheme to open specific tabs, items or perform actions. All supported schemes are listed in the [`QuickActions.swift`](https://github.com/ruddarr/app/blob/develop/Ruddarr/Dependencies/QuickActions.swift)
+Ruddarr supports the `ruddarr://` URL Scheme to open specific tabs, items or perform actions. All supported schemes are listed in [`QuickActions.swift`](Ruddarr/Dependencies/QuickActions.swift). The old `ruddarr://activity` link opens Activity inside the Downloads tab.
 
 ## Development
 
@@ -47,29 +81,24 @@ To build the app locally Xcode must be signed into an Apple Account:
 Xcode → Settings → Accounts
 ```
 
-Next, select the Apple Account's team for the `Ruddarr` and `NotificationService` targets:
+Next, select the Apple Account's team for the `Ruddarr` and `NotificationService` targets, and change their bundle identifiers to ones your team owns (for example `com.yourname.ruddarr` and `com.yourname.ruddarr.notifications`):
 
 ```
-Ruddarr → Signing & Capabilities → Targets → {target} -> Signing -> Team
+Ruddarr → Signing & Capabilities → Targets → {target} → Signing → Team
 ```
 
-Now choose between **a)** creating a provisioning profile on your account for the `iCloud`, `App Groups` and `Push Notification` capabilities and skipping the next steps, or **b)** continuing on and removing the capabilities from both targets (the `NotificationService` target only has `App Groups`):
+The capabilities are already removed and CloudKit is already mocked, so a free or paid Apple Account works without extra provisioning.
 
-```
-Ruddarr → Signing & Capabilities → Targets → Ruddarr
-Ruddarr → Signing & Capabilities → Targets → NotificationService
-```
-
-Then uncomment the CloudKit mock in `Ruddarr::init()`:
-
-```swift
-dependencies.cloudkit = .mock
-```
+On the first build, Xcode asks to trust the SwiftLint build plugin. Choose **Trust & Enable**.
 
 > [!NOTE]
-> Instances and other settings are stored in the `group.com.ruddarr` App Group so app extensions can read them. When using your own bundle identifier, update `Ruddarr.group` in `Ruddarr.swift` and the `App Groups` entry in both the `Ruddarr` and `NotificationService` entitlements to match.
+> Settings are stored in the `group.com.ruddarr` defaults suite (`Ruddarr.group` in `Ruddarr.swift`). Without the App Group capability, the suite lives in the app's own container, which is fine for sideloaded builds.
 
-That's it. Select a run destination and build it. 
+That's it. Select a run destination and build it.
+
+### Signed IPA from GitHub Actions
+
+The `Personal IPA` workflow (`.github/workflows/personal-ipa.yml`) builds a signed Ad Hoc IPA on pushes to `personal`, or on demand. It needs these repository secrets: `APPLE_TEAM_ID`, `APP_BUNDLE_ID`, `IOS_CERTIFICATE_P12`, `IOS_CERTIFICATE_PASSWORD` and `IOS_PROVISION_PROFILE`.
 
 ### Sentry Symbols
 
