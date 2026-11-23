@@ -67,6 +67,7 @@ struct SeerrRequest: Identifiable, Sendable, Equatable {
     var requestedBy: String
     var created: Date?
     var seasons: Int
+    var posterPath: String?
 
     var summary: String {
         var parts = [isMovie ? String(localized: "Movie") : String(localized: "Series")]
@@ -87,6 +88,9 @@ struct SeerrResult: Identifiable, Sendable, Equatable {
     var year: String?
     var overview: String?
     var status: SeerrMediaStatus
+    var posterPath: String?
+    var backdropPath: String?
+    var rating: Double?
 
     var summary: String {
         var parts = [isMovie ? String(localized: "Movie") : String(localized: "Series")]
@@ -100,7 +104,7 @@ struct SeerrResult: Identifiable, Sendable, Equatable {
 
 actor SeerrClient {
     private let http: DownloadHTTP
-    private var titles: [String: String] = [:]
+    private var titles: [String: (title: String, poster: String?)] = [:]
 
     init(server: ServiceServer) throws {
         guard let base = server.baseURL else { throw DownloadClientError.invalidURL }
@@ -109,9 +113,9 @@ actor SeerrClient {
         http = DownloadHTTP(base: base, headers: headers)
     }
 
-    func requests(_ filter: SeerrFilter) async throws -> [SeerrRequest] {
+    func requests(_ filter: SeerrFilter, take: Int = 100) async throws -> [SeerrRequest] {
         let body = try await get("request", query: [
-            URLQueryItem(name: "take", value: "100"),
+            URLQueryItem(name: "take", value: String(take)),
             URLQueryItem(name: "filter", value: filter.rawValue),
             URLQueryItem(name: "sort", value: "added"),
         ]) as? [String: Any] ?? [:]
@@ -122,6 +126,7 @@ actor SeerrClient {
             let isMovie = jsonString(raw["type"]) == "movie"
             let tmdbId = Int(jsonDouble(media["tmdbId"]))
             let user = raw["requestedBy"] as? [String: Any] ?? [:]
+            let info = try await details(tmdbId, isMovie: isMovie)
 
             list.append(SeerrRequest(
                 id: Int(jsonDouble(raw["id"])),
@@ -129,10 +134,11 @@ actor SeerrClient {
                 mediaStatus: SeerrMediaStatus(rawValue: Int(jsonDouble(media["status"]))),
                 isMovie: isMovie,
                 tmdbId: tmdbId,
-                title: try await title(tmdbId, isMovie: isMovie),
+                title: info.title,
                 requestedBy: jsonString(user["displayName"]) ?? "",
                 created: jsonString(raw["createdAt"]).flatMap(seerrDate),
-                seasons: (raw["seasons"] as? [Any])?.count ?? 0
+                seasons: (raw["seasons"] as? [Any])?.count ?? 0,
+                posterPath: info.poster
             ))
         }
         return list
@@ -144,22 +150,12 @@ actor SeerrClient {
             URLQueryItem(name: "page", value: "1"),
         ]) as? [String: Any] ?? [:]
 
-        return (body["results"] as? [[String: Any]] ?? []).compactMap { raw in
-            let type = jsonString(raw["mediaType"])
-            guard type == "movie" || type == "tv" else { return nil }
+        return (body["results"] as? [[String: Any]] ?? []).compactMap { seerrResult($0) }
+    }
 
-            let media = raw["mediaInfo"] as? [String: Any] ?? [:]
-            let date = jsonString(raw["releaseDate"]) ?? jsonString(raw["firstAirDate"])
-
-            return SeerrResult(
-                tmdbId: Int(jsonDouble(raw["id"])),
-                isMovie: type == "movie",
-                title: jsonString(raw["title"]) ?? jsonString(raw["name"]) ?? "",
-                year: date.map { String($0.prefix(4)) },
-                overview: jsonString(raw["overview"]),
-                status: SeerrMediaStatus(rawValue: Int(jsonDouble(media["status"]))) ?? .unknown
-            )
-        }
+    func discover(_ row: SeerrDiscoverRow) async throws -> [SeerrResult] {
+        let body = try await get(row.path, query: [URLQueryItem(name: "page", value: "1")]) as? [String: Any] ?? [:]
+        return (body["results"] as? [[String: Any]] ?? []).compactMap { seerrResult($0, defaultType: row.mediaType) }
     }
 
     func request(_ result: SeerrResult) async throws {
@@ -193,14 +189,17 @@ actor SeerrClient {
         _ = try await get("request", query: [URLQueryItem(name: "take", value: "1")])
     }
 
-    private func title(_ tmdbId: Int, isMovie: Bool) async throws -> String {
+    private func details(_ tmdbId: Int, isMovie: Bool) async throws -> (title: String, poster: String?) {
         let key = "\(isMovie ? "movie" : "tv")/\(tmdbId)"
         if let cached = titles[key] { return cached }
 
         let details = (try? await get(key)) as? [String: Any] ?? [:]
-        let title = jsonString(details["title"]) ?? jsonString(details["name"]) ?? "TMDB \(tmdbId)"
-        titles[key] = title
-        return title
+        let found = (
+            title: jsonString(details["title"]) ?? jsonString(details["name"]) ?? "TMDB \(tmdbId)",
+            poster: jsonString(details["posterPath"])
+        )
+        titles[key] = found
+        return found
     }
 
     private func get(_ path: String, query: [URLQueryItem] = []) async throws -> Any {
@@ -247,4 +246,71 @@ private func seerrDate(_ value: String) -> Date? {
     let formatter = ISO8601DateFormatter()
     formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
     return formatter.date(from: value) ?? ISO8601DateFormatter().date(from: value)
+}
+
+// One search or discover result; people and other media types are skipped
+private func seerrResult(_ raw: [String: Any], defaultType: String? = nil) -> SeerrResult? {
+    let type = jsonString(raw["mediaType"]) ?? defaultType
+    guard type == "movie" || type == "tv" else { return nil }
+
+    let media = raw["mediaInfo"] as? [String: Any] ?? [:]
+    let date = jsonString(raw["releaseDate"]) ?? jsonString(raw["firstAirDate"])
+    let rating = jsonDouble(raw["voteAverage"])
+
+    return SeerrResult(
+        tmdbId: Int(jsonDouble(raw["id"])),
+        isMovie: type == "movie",
+        title: jsonString(raw["title"]) ?? jsonString(raw["name"]) ?? "",
+        year: date.map { String($0.prefix(4)) },
+        overview: jsonString(raw["overview"]),
+        status: SeerrMediaStatus(rawValue: Int(jsonDouble(media["status"]))) ?? .unknown,
+        posterPath: jsonString(raw["posterPath"]),
+        backdropPath: jsonString(raw["backdropPath"]),
+        rating: rating > 0 ? rating : nil
+    )
+}
+
+// The rows on the Discover screen, like Seerr's own home page
+enum SeerrDiscoverRow: String, CaseIterable, Identifiable, Sendable {
+    var id: Self { self }
+
+    case trending
+    case popularMovies
+    case upcomingMovies
+    case popularSeries
+    case upcomingSeries
+
+    var label: String {
+        switch self {
+        case .trending: String(localized: "Trending")
+        case .popularMovies: String(localized: "Popular Movies")
+        case .upcomingMovies: String(localized: "Upcoming Movies")
+        case .popularSeries: String(localized: "Popular Series")
+        case .upcomingSeries: String(localized: "Upcoming Series")
+        }
+    }
+
+    var path: String {
+        switch self {
+        case .trending: "discover/trending"
+        case .popularMovies: "discover/movies"
+        case .upcomingMovies: "discover/movies/upcoming"
+        case .popularSeries: "discover/tv"
+        case .upcomingSeries: "discover/tv/upcoming"
+        }
+    }
+
+    var mediaType: String? {
+        switch self {
+        case .trending: nil
+        case .popularMovies, .upcomingMovies: "movie"
+        case .popularSeries, .upcomingSeries: "tv"
+        }
+    }
+}
+
+// TMDB image sizes: w342 posters fit a grid, w780 backdrops fill a phone's width
+func tmdbImage(_ path: String?, size: String = "w342") -> String? {
+    guard let path, !path.isEmpty else { return nil }
+    return "https://image.tmdb.org/t/p/\(size)\(path)"
 }
