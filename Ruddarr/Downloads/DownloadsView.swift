@@ -201,13 +201,11 @@ struct DownloadsView: View {
             }
         }
 
-        ToolbarItem(placement: .primaryAction) {
-            NavigationLink {
-                RequestsView()
-            } label: {
-                Label("Requests", systemImage: "person.crop.circle.badge.plus")
+        #if os(iOS)
+            ToolbarItem(placement: .principal) {
+                DownloadsSectionPicker()
             }
-        }
+        #endif
 
         ToolbarItem(placement: .navigation) {
             Menu {

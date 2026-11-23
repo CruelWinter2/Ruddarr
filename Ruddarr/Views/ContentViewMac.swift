@@ -32,6 +32,8 @@ struct ContentView: View {
                 case .calendar:
                     CalendarView()
                         .frame(maxWidth: 700)
+                case .discover:
+                    DiscoverView()
                 case .activity:
                     ActivityView()
                 case .downloads:

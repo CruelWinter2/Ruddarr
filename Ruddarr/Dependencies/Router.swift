@@ -7,6 +7,8 @@ final class Router {
     nonisolated init() {}
 
     var selectedTab: TabItem = .movies
+    var downloadsSection: DownloadsSection = .downloads
+    var showSettings = false
 
     var switchToRadarrInstance: String?
     var switchToSonarrInstance: String?
@@ -29,6 +31,7 @@ enum TabItem: String, Identifiable, Hashable, Sendable {
     case movies
     case series
     case calendar
+    case discover
     case activity
     case downloads
     case history
@@ -46,6 +49,7 @@ enum TabItem: String, Identifiable, Hashable, Sendable {
         case .movies: String(localized: "Movies", comment: "Plural. Tab/sidebar menu item")
         case .series: String(localized: "Series", comment: "Plural. Tab/sidebar menu item")
         case .calendar: String(localized: "Calendar", comment: "Tab/sidebar menu item")
+        case .discover: String(localized: "Discover", comment: "Tab/sidebar menu item")
         case .activity: String(localized: "Activity", comment: "Tab/sidebar menu item")
         case .downloads: String(localized: "Downloads", comment: "Tab/sidebar menu item")
         case .history: String(localized: "History", comment: "Tab/sidebar menu item")
@@ -58,6 +62,7 @@ enum TabItem: String, Identifiable, Hashable, Sendable {
         case .movies: "movies"
         case .series: "series"
         case .calendar: "calendar"
+        case .discover: "magnifyingglass"
         case .activity: "waveform.path.ecg"
         case .downloads: "arrow.down.circle"
         case .history: "clock.arrow.trianglehead.counterclockwise.rotate.90"
@@ -107,4 +112,19 @@ extension TabItem.Openable: AppEnum {
             image: DisplayRepresentation.Image(systemName: "waveform.path.ecg")
         ),
     ]}
+}
+
+// The Downloads tab switches between the download client and the Radarr/Sonarr queue
+enum DownloadsSection: String, CaseIterable, Identifiable, Sendable {
+    var id: Self { self }
+
+    case downloads
+    case activity
+
+    var label: String {
+        switch self {
+        case .downloads: String(localized: "Downloads")
+        case .activity: String(localized: "Activity")
+        }
+    }
 }
