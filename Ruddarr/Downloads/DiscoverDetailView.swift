@@ -47,22 +47,26 @@ struct DiscoverDetailView: View {
 
     private var header: some View {
         ZStack(alignment: .bottomLeading) {
-            AsyncImage(url: tmdbImage(result.backdropPath, size: "w780").flatMap(URL.init(string:))) { image in
-                image.resizable().aspectRatio(contentMode: .fill)
-            } placeholder: {
-                Rectangle().fill(.secondary.opacity(0.2))
-            }
-            .frame(height: 260)
-            .frame(maxWidth: .infinity)
-            .clipped()
-            .overlay {
-                LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .center, endPoint: .bottom)
-            }
+            // A fixed-size frame with the image as an overlay, so a wide backdrop can't widen the page
+            Color.clear
+                .frame(height: 260)
+                .frame(maxWidth: .infinity)
+                .overlay {
+                    AsyncImage(url: tmdbImage(result.backdropPath, size: "w780").flatMap(URL.init(string:))) { image in
+                        image.resizable().scaledToFill()
+                    } placeholder: {
+                        Rectangle().fill(.secondary.opacity(0.2))
+                    }
+                }
+                .clipped()
+                .overlay {
+                    LinearGradient(colors: [.clear, .black.opacity(0.85)], startPoint: .center, endPoint: .bottom)
+                }
 
             HStack(alignment: .bottom, spacing: 14) {
                 CachedAsyncImage(.poster, tmdbImage(result.posterPath), placeholder: result.title)
                     .aspectRatio(2 / 3, contentMode: .fill)
-                    .frame(width: 100)
+                    .frame(width: 100, height: 150)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .shadow(radius: 8)
 
