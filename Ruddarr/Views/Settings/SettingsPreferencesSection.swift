@@ -44,10 +44,11 @@ struct SettingsPreferencesSection: View {
 
         Picker(selection: $settings.tab) {
             ForEach([
-                TabItem.movies,
-                TabItem.series,
                 TabItem.calendar,
-                TabItem.activity,
+                TabItem.movies,
+                TabItem.discover,
+                TabItem.series,
+                TabItem.downloads,
             ]) { tab in
                 Text(tab.label)
             }

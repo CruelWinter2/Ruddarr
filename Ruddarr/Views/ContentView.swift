@@ -9,41 +9,26 @@ struct ContentView: View {
 
     var body: some View {
         TabView(selection: selectedTab) {
+            Tab(calendar.label, systemImage: calendar.icon, value: calendar) {
+                CalendarView()
+            }
+
             Tab(movies.label, image: movies.icon, value: movies) {
                 MoviesView()
+            }
+
+            Tab(discover.label, systemImage: discover.icon, value: discover) {
+                DiscoverView()
             }
 
             Tab(series.label, image: series.icon, value: series) {
                 SeriesView()
             }
 
-            Tab(calendar.label, systemImage: calendar.icon, value: calendar) {
-                CalendarView()
-            }
-
-            Tab(activity.label, systemImage: activity.icon, value: activity) {
-                ActivityView()
+            Tab(TabItem.downloads.label, systemImage: TabItem.downloads.icon, value: TabItem.downloads) {
+                DownloadsTab()
             }
             .badge(Queue.shared.itemsWithIssues)
-
-            Tab(TabItem.downloads.label, systemImage: TabItem.downloads.icon, value: TabItem.downloads) {
-                DownloadsView()
-                    .displayToasts()
-            }
-
-            if deviceType == .pad {
-                Tab(history.label, systemImage: history.icon, value: history) {
-                    HistoryView()
-                }
-                .customizationID("tab.history")
-                .defaultVisibility(.hidden, for: .tabBar)
-                // .customizationBehavior(.disabled, for: .tabBar, .sidebar)
-            }
-
-            Tab(TabItem.settings.label, systemImage: TabItem.settings.icon, value: TabItem.settings) {
-                SettingsView()
-            }
-            .defaultVisibility(.hidden, for: .tabBar)
         }
         .tabViewStyle(.sidebarAdaptable)
         .tabViewCustomization($tabCustomization)
@@ -55,6 +40,11 @@ struct ContentView: View {
             await updateTelemetryAndWebhooks()
         }
         .onBecomeActive(perform: updateTelemetryAndWebhooks)
+        .sheet(isPresented: dependencies.$router.showSettings) {
+            SettingsView()
+        }
+        .onAppear { routeHiddenTab(dependencies.router.selectedTab) }
+        .onChange(of: dependencies.router.selectedTab) { _, tab in routeHiddenTab(tab) }
         .displayToasts()
         .whatsNewSheet()
         .reportBugSheet()
@@ -64,8 +54,7 @@ struct ContentView: View {
     var movies: TabItem { .movies }
     var series: TabItem { .series }
     var calendar: TabItem { .calendar }
-    var activity: TabItem { .activity }
-    var history: TabItem { .history }
+    var discover: TabItem { .discover }
 
     var selectedTab: Binding<TabItem> {
         Binding<TabItem>(
@@ -83,6 +72,20 @@ struct ContentView: View {
     func updateTelemetryAndWebhooks() async {
         Telemetry.maybePing(with: settings)
         Notifications.maybeUpdateWebhooks(settings)
+    }
+
+    // Activity, History and Settings are no longer tabs: open them where they live now
+    func routeHiddenTab(_ tab: TabItem) {
+        switch tab {
+        case .activity, .history:
+            dependencies.router.downloadsSection = .activity
+            dependencies.router.selectedTab = .downloads
+        case .settings:
+            dependencies.router.selectedTab = .discover
+            dependencies.router.showSettings = true
+        default:
+            break
+        }
     }
 
     func handleTabChange(_ from: TabItem, _ to: TabItem) {

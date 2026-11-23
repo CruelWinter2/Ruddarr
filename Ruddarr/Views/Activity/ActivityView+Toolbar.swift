@@ -30,6 +30,12 @@ extension ActivityView {
 
     @ToolbarContentBuilder
     var toolbarButtons: some ToolbarContent {
+        #if os(iOS)
+            ToolbarItem(placement: .principal) {
+                DownloadsSectionPicker()
+            }
+        #endif
+
         ToolbarItem(placement: .navigation) {
             toolbarFilterButton
                 .tint(.primary)

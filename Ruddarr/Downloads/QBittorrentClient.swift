@@ -130,7 +130,8 @@ actor QBittorrentClient: DownloadClient {
         }
 
         if code == 403 { throw DownloadClientError.unauthorized }
-        guard code == 200 else { throw DownloadClientError.status(code) }
+        // qBittorrent 5.2 answers some actions with 204 No Content
+        guard (200..<300).contains(code) else { throw DownloadClientError.status(code) }
         return data
     }
 
@@ -144,8 +145,8 @@ actor QBittorrentClient: DownloadClient {
         let body = String(decoding: data, as: UTF8.self)
         cookie = newCookie
 
-        // Servers that skip auth for local clients answer 200 without "Ok."
-        guard code == 200, !body.contains("Fails") else {
+        // Servers that skip auth for local clients answer 200 without "Ok."; qBittorrent 5.2 answers 204
+        guard (200..<300).contains(code), !body.contains("Fails") else {
             throw code == 403 || body.contains("Fails") ? DownloadClientError.unauthorized : DownloadClientError.status(code)
         }
 
